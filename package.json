@@ -1,0 +1,21 @@
+{
+  "name": "@the-devoyage/sequelize-query-generator",
+  "version": "0.0.1",
+  "description": "Converts requests into sequelize valid objects allowing standardizied and easy finding, filtering, and paginating.",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nick McLean",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "@typescript-eslint/parser": "^5.44.0",
+    "eslint": "^8.28.0",
+    "sequelize": "^6.25.8"
+  },
+  "peerDependencies": {
+    "sequelize": ">=6.25.8"
+  }
+}
