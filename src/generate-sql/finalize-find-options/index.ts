@@ -28,17 +28,15 @@ export const finalizeFindOptions = (findOptions: {
   const orOptions = findOptions.where[Op.or]?.length
     ? { [Op.or]: findOptions.where[Op.or] }
     : undefined;
-  const andOptions = { [Op.and]: findOptions.where[Op.and] };
+  const andOptions = findOptions.where[Op.and]?.length
+    ? { [Op.and]: findOptions.where[Op.and] }
+    : undefined;
   const finalOptions = [];
 
-  if (orOptions) {
-    finalOptions.push(orOptions);
-  }
+  if (orOptions) finalOptions.push(orOptions);
 
-  if (andOptions) {
-    finalOptions.push(andOptions);
-  }
+  if (andOptions) finalOptions.push(andOptions);
 
-  findOptions.where[Op.or] = finalOptions;
+  if (finalOptions.length) findOptions.where[Op.or] = finalOptions;
   delete findOptions.where[Op.and];
 };
