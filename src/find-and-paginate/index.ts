@@ -18,7 +18,7 @@ export async function findAndPaginate<
   const history: HistoricStats[] = [];
 
   if (filterConfig?.history?.interval) {
-    for (const countResult of count as unknown as Record<
+    for (const countResult of (count as unknown) as Record<
       string | "count",
       number
     >[]) {
@@ -55,10 +55,10 @@ export async function findAndPaginate<
   }
 
   const cursor = rows.length
-    ? (rows[rows.length - 1][
+    ? ((rows[rows.length - 1][
         (filterConfig.pagination.date_key ??
           "createdAt") as keyof Model<ModelType>
-      ] as unknown as Date)
+      ] as unknown) as Date)
     : null;
 
   if (findOptions.where) {
