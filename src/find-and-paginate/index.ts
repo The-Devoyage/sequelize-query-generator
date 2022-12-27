@@ -17,7 +17,7 @@ export async function findAndPaginate<
 
   const history: HistoricStats[] = [];
 
-  if (filterConfig?.history?.interval) {
+  if (filterConfig.history?.interval) {
     for (const countResult of (count as unknown) as Record<
       string | "count",
       number
@@ -56,9 +56,9 @@ export async function findAndPaginate<
 
   const cursor = rows.length
     ? ((rows[rows.length - 1][
-        (filterConfig.pagination.date_key ??
-          "createdAt") as keyof Model<ModelType>
-      ] as unknown) as Date)
+      (filterConfig.pagination.date_key ??
+        "createdAt") as keyof Model<ModelType>
+    ] as unknown) as Date)
     : null;
 
   if (findOptions.where) {
@@ -79,7 +79,7 @@ export async function findAndPaginate<
   const remaining = Math.max(
     0,
     (Array.isArray(count) ? count.reduce((a, b) => a + b.count, 0) : count) -
-      (filterConfig.pagination.limit ?? 4)
+    (filterConfig.pagination.limit ?? 4)
   );
 
   const page = Math.ceil(
