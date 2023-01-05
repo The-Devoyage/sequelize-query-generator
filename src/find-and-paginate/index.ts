@@ -1,4 +1,4 @@
-import { Model, FindOptions, ModelStatic, WhereOptions } from "sequelize";
+import { Model, FindOptions, ModelStatic, WhereOptions, Op } from "sequelize";
 import {
   FilterConfig,
   HistoricStats,
@@ -11,14 +11,16 @@ export async function findAndPaginate<
 >(
   model: ModelStatic<Model<ModelType>>,
   findOptions: FindOptions,
-  filterConfig: FilterConfig
+  filterConfig: FilterConfig,
+  demographicFindOptions?: FindOptions
 ): Promise<{ data: Model<ModelType>[]; stats: Stats }> {
   const { rows, count } = await model.findAndCountAll(findOptions);
 
   const history: HistoricStats[] = [];
+  let demographics;
 
   if (filterConfig.history?.interval) {
-    for (const countResult of (count as unknown) as Record<
+    for (const countResult of count as unknown as Record<
       string | "count",
       number
     >[]) {
@@ -55,10 +57,10 @@ export async function findAndPaginate<
   }
 
   const cursor = rows.length
-    ? ((rows[rows.length - 1][
-      (filterConfig.pagination.date_key ??
-        "createdAt") as keyof Model<ModelType>
-    ] as unknown) as Date)
+    ? (rows[rows.length - 1][
+        (filterConfig.pagination.date_key ??
+          "createdAt") as keyof Model<ModelType>
+      ] as unknown as Date)
     : null;
 
   if (findOptions.where) {
@@ -79,12 +81,66 @@ export async function findAndPaginate<
   const remaining = Math.max(
     0,
     (Array.isArray(count) ? count.reduce((a, b) => a + b.count, 0) : count) -
-    (filterConfig.pagination.limit ?? 4)
+      (filterConfig.pagination.limit ?? 4)
   );
 
   const page = Math.ceil(
     (total - remaining) / (filterConfig.pagination.limit ?? 4)
   );
+
+  if (demographicFindOptions && filterConfig.demographics?.compare_by) {
+    const exclude = [];
+
+    if (filterConfig.demographics?.exclude?.length) {
+      for (const value of filterConfig.demographics.exclude) {
+        exclude.push({ [Op.ne]: value });
+        exclude.push({ [Op.ne]: parseInt(value) });
+        exclude.push({ [Op.ne]: parseFloat(value) });
+      }
+    }
+
+    const totalDemographics = await model.count({
+      ...demographicFindOptions,
+      where: {
+        ...demographicFindOptions.where,
+        [filterConfig.demographics.compare_by]: {
+          [Op.and]: exclude,
+        },
+      } as WhereOptions,
+    });
+
+    const withAttributes = {
+      ...demographicFindOptions,
+      group: [filterConfig.demographics.compare_by],
+    };
+
+    const groupedDemographics = (await model.count(
+      withAttributes as unknown as FindOptions
+    )) as unknown as Record<string, number>[];
+
+    for (const group of groupedDemographics) {
+      group.average = group.count / totalDemographics;
+    }
+
+    const comparedAverage = parseFloat(
+      (
+        (groupedDemographics.reduce((a, b) => a + b.average, 0) /
+          groupedDemographics.length) *
+        100
+      ).toFixed(2)
+    );
+
+    demographics = {
+      query: {
+        total,
+        average: parseFloat(((total / totalDemographics) * 100).toFixed(2)),
+      },
+      compared: {
+        total: totalDemographics,
+        average: comparedAverage,
+      },
+    };
+  }
 
   return {
     data: rows,
@@ -94,6 +150,7 @@ export async function findAndPaginate<
       page,
       remaining,
       history,
+      demographics,
     },
   };
 }

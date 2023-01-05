@@ -1,15 +1,15 @@
 import {
   FieldFilter,
   FilterConfig,
-  parseFieldFilters,
 } from "@the-devoyage/request-filter-language";
-import { FindOptions, Op, Sequelize } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { finalizeFindOptions } from "./finalize-find-options";
 import { generateWhereOptions } from "./generate-where-options";
 import { fieldRuleFieldFilter } from "./handle-field-rules";
 import { handleHistory } from "./handle-history";
 import { handlePagination } from "./handle-pagination";
 import { modifyFindOptions } from "./modify-find-options";
+import { GenerateConfig, handleFindOptions } from "./handle-find-options";
 
 export interface FieldRule {
   location: string;
@@ -23,10 +23,6 @@ interface GenerateSQLArgs {
   fieldRules?: FieldRule[];
 }
 
-interface GenerateConfig {
-  verbose?: boolean;
-}
-
 export const GenerateSQL = (
   args: GenerateSQLArgs,
   sequelize: Sequelize,
@@ -34,45 +30,31 @@ export const GenerateSQL = (
 ) => {
   const { fieldFilters, filterConfig, fieldRules = [] } = args;
 
-  const findOptions: { where: { [Op.and]: []; [Op.or]?: [] } } = {
+  let findOptions: { where: { [Op.and]: []; [Op.or]?: [] } } = {
+    where: { [Op.and]: [], [Op.or]: [] },
+  };
+  let demographicFindOptions: { where: { [Op.and]: []; [Op.or]?: [] } } = {
     where: { [Op.and]: [], [Op.or]: [] },
   };
 
   handlePagination(findOptions, filterConfig);
 
-  for (const rootLocation in fieldFilters) {
-    const filtersAndLocations = parseFieldFilters(
-      fieldFilters[rootLocation],
-      rootLocation,
+  findOptions = handleFindOptions(
+    findOptions,
+    fieldFilters,
+    fieldRules,
+    null,
+    generateConfig
+  );
+
+  if (filterConfig?.demographics?.compare_by) {
+    demographicFindOptions = handleFindOptions(
+      demographicFindOptions,
+      fieldFilters,
+      fieldRules,
+      filterConfig,
       generateConfig
     );
-
-    for (const fl of filtersAndLocations) {
-      const fieldRule = fieldRules?.find(
-        (rule) => rule.location === fl.location
-      );
-
-      if (fieldRule) {
-        const { fieldFilter, filterLocation } = fieldRuleFieldFilter(
-          fieldRule,
-          filtersAndLocations
-        );
-
-        if (fieldFilter) {
-          fl.fieldFilter = fieldFilter;
-          fl.location = filterLocation;
-        }
-
-        const index = fieldRules?.findIndex(
-          (rule) => rule.location === fieldRule.location
-        );
-
-        fieldRules.splice(index, 1);
-      }
-
-      const whereOptions = generateWhereOptions(fl.fieldFilter, rootLocation);
-      modifyFindOptions(findOptions, whereOptions, fl.fieldFilter);
-    }
   }
 
   if (fieldRules?.length) {
@@ -85,12 +67,14 @@ export const GenerateSQL = (
       const whereOptions = generateWhereOptions(fieldFilter, filterLocation);
 
       modifyFindOptions(findOptions, whereOptions, fieldFilter);
+      modifyFindOptions(demographicFindOptions, whereOptions, fieldFilter);
     }
   }
 
   handleHistory(findOptions, sequelize, filterConfig);
 
   finalizeFindOptions(findOptions);
+  finalizeFindOptions(demographicFindOptions);
 
-  return findOptions as FindOptions;
+  return { findOptions, demographicFindOptions };
 };
