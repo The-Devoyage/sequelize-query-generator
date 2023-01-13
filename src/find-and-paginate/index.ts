@@ -1,4 +1,11 @@
-import { Model, FindOptions, ModelStatic, WhereOptions } from "sequelize";
+import {
+  Model,
+  FindOptions,
+  ModelStatic,
+  WhereOptions,
+  ScopeOptions,
+  Attributes,
+} from "sequelize";
 import {
   FilterConfig,
   HistoricStats,
@@ -6,19 +13,34 @@ import {
   Stats,
 } from "@the-devoyage/request-filter-language";
 
+export interface FindAndPaginateArgs<
+  ModelType extends Record<string, unknown>
+> {
+  model: ModelStatic<Model<ModelType>>;
+  findOptions: FindOptions;
+  filterConfig: FilterConfig;
+  attributes: Attributes<Model>;
+  scopes: ScopeOptions[];
+}
+
 export async function findAndPaginate<
   ModelType extends Record<string, unknown>
 >(
-  model: ModelStatic<Model<ModelType>>,
-  findOptions: FindOptions,
-  filterConfig: FilterConfig
+  args: FindAndPaginateArgs<ModelType>
 ): Promise<{ data: Model<ModelType>[]; stats: Stats }> {
-  const { rows, count } = await model.findAndCountAll(findOptions);
+  const { model, findOptions, filterConfig, attributes, scopes } = args;
+
+  const { rows, count } = await model.scope(scopes).findAndCountAll({
+    ...findOptions,
+    attributes,
+    col: `${model.name}.id`,
+    distinct: true,
+  });
 
   const history: HistoricStats[] = [];
 
-  if (filterConfig?.history?.interval) {
-    for (const countResult of (count as unknown) as Record<
+  if (filterConfig.history?.interval) {
+    for (const countResult of count as unknown as Record<
       string | "count",
       number
     >[]) {
@@ -54,11 +76,18 @@ export async function findAndPaginate<
     }
   }
 
-  const cursor = rows.length
-    ? ((rows[rows.length - 1][
+  const prev_cursor = rows.length
+    ? (rows[0][
         (filterConfig.pagination.date_key ??
           "createdAt") as keyof Model<ModelType>
-      ] as unknown) as Date)
+      ] as unknown as Date)
+    : null;
+
+  const cursor = rows.length
+    ? (rows[rows.length - 1][
+        (filterConfig.pagination.date_key ??
+          "createdAt") as keyof Model<ModelType>
+      ] as unknown as Date)
     : null;
 
   if (findOptions.where) {
@@ -73,7 +102,9 @@ export async function findAndPaginate<
     }
   }
 
-  let total = await model.count(findOptions);
+  let total = await model
+    .scope(scopes)
+    .count({ ...findOptions.where, col: `${model.name}.id`, distinct: true });
   total = Array.isArray(total) ? total.reduce((a, b) => a + b.count, 0) : total;
 
   const remaining = Math.max(
@@ -94,6 +125,8 @@ export async function findAndPaginate<
       page,
       remaining,
       history,
+      per_page: filterConfig.pagination.limit ?? 4,
+      prev_cursor,
     },
   };
 }

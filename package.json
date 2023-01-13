@@ -1,6 +1,6 @@
 {
   "name": "@the-devoyage/sequelize-query-generator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Converts requests into sequelize valid objects allowing standardizied and easy finding, filtering, and paginating.",
   "main": "dist/index.js",
   "scripts": {
@@ -19,6 +19,6 @@
     "sequelize": ">=6.25.8"
   },
   "dependencies": {
-    "@the-devoyage/request-filter-language": "^0.0.2"
+    "@the-devoyage/request-filter-language": "^0.0.3"
   }
 }
