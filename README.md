@@ -9,11 +9,11 @@ This library converts standardized network requests into usable Sequelize filter
 import { GenerateSequelize } from "@the-devoyage/sequelize-query-generator";
 
 const getUsers = async (req, res) => {
-const findOptions = GenerateSequelize(req.body)
+  const findOptions = GenerateSequelize(req.body)
 
-const users = await User.findAll(findOptions);
+  const users = await User.findAll(findOptions);
 
-res.json(users);
+  res.json(users);
 };
 ```
 
