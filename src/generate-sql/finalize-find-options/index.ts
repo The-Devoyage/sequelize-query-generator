@@ -37,6 +37,6 @@ export const finalizeFindOptions = (findOptions: {
 
   if (andOptions) finalOptions.push(andOptions);
 
-  if (finalOptions.length) findOptions.where[Op.or] = finalOptions;
-  delete findOptions.where[Op.and];
+  if (finalOptions.length) findOptions.where[Op.and] = finalOptions;
+  delete findOptions.where[Op.or];
 };

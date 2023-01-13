@@ -27,7 +27,7 @@ interface GenerateConfig {
   verbose?: boolean;
 }
 
-export const GenerateSQL = (
+export const GenerateSequelize = (
   args: GenerateSQLArgs,
   sequelize: Sequelize,
   generateConfig?: GenerateConfig

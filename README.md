@@ -6,10 +6,10 @@ This library converts standardized network requests into usable Sequelize filter
 
 ```js
 // My API
-import { GenerateSQL } from "@the-devoyage/sequelize-query-generator";
+import { GenerateSequelize } from "@the-devoyage/sequelize-query-generator";
 
 const getUsers = async (req, res) => {
-const findOptions = GenerateSQL(req.body)
+const findOptions = GenerateSequelize(req.body)
 
 const users = await User.findAll(findOptions);
 
@@ -381,17 +381,17 @@ interface RequestBody {
 
 ### 3. Generate Sequelize
 
-Use the `GenerateSQL` function to convert the typed request to Sequelize Find Options.
+Use the `GenerateSequelize` function to convert the typed request to Sequelize Find Options.
 
 Graphql Example:
 
 ```ts
 // Resolvers.ts
-import { GenerateSQL } from "@the-devoyage/sequelize-query-generator";
+import { GenerateSequelize } from "@the-devoyage/sequelize-query-generator";
 
 export const Query: QueryResolvers = {
   getAccounts: async (_, args) => {
-    const findOptions = GenerateSQL({
+    const findOptions = GenerateSequelize({
       fieldFilters: args.getAllUsersInput,
       filterConfig: args.filterConfig,
     });
@@ -407,7 +407,7 @@ Express JS Example
 
 ```ts
 app.get("/", (req, res) => {
-  const findOptions = GenerateSQL({
+  const findOptions = GenerateSequelize({
     fieldFilters: req.body,
     filterConfig: req.body.config,
   });
@@ -420,14 +420,14 @@ app.get("/", (req, res) => {
 
 ### 4. Find and Paginate
 
-Use the generated `findOptions` object, returned from the `GenerateSQL` method, with the provided find and paginate function.
+Use the generated `findOptions` object, returned from the `GenerateSequelize` method, with the provided find and paginate function.
 
 ```ts
-import { GenerateSQL, FindAndPaginate } from "@the-devoyage/sequelize-query-generator";
+import { GenerateSequelize, FindAndPaginate } from "@the-devoyage/sequelize-query-generator";
 
 const Query = {
   getAccounts: async (_, args) => {
-    const findOptions = GenerateSQL<IAccount>({
+    const findOptions = GenerateSequelize<IAccount>({
       fieldFilters: args.getAccountsInput,
       filterConfig: args.filterConfig
     });
